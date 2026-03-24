@@ -1,13 +1,23 @@
-# Datasets (Arquivos pesados)
+# Ambientes Virtuais e Python
+.venv/
+venv/
+env/
+bin/
+lib/
+share/
+man/
+include/
+pyvenv.cfg
+__pycache__/
+*.pyc
+
+# Jupyter e VS Code
+.ipynb_checkpoints/
+.vscode/
+jupyter/
+
+# Datasets e Cache do Kaggle
 *.csv
 *.zip
 .kagglehub/
-
-# Python (Arquivos temporários e cache)
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
-.vscode/
-
-# gerado apos a execucao
-grafico_distancia.png
+.kaggle/
