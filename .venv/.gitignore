@@ -1,0 +1,13 @@
+# Datasets (Arquivos pesados)
+*.csv
+*.zip
+.kagglehub/
+
+# Python (Arquivos temporários e cache)
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+
+# gerado apos a execucao
+grafico_distancia.png
