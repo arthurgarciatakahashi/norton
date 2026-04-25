@@ -3,12 +3,13 @@
 \usepackage{sbc-template}
 \usepackage{graphicx,url}
 \usepackage[utf8]{inputenc}
-% Pacote essencial para links clicáveis e citações coloridas (opcional)
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{booktabs}
+\usepackage{float} % Pacote essencial para travar as imagens com [H]
 
 \sloppy
 
-\title{Análise de Habitualidade Geográfica e Detecção de Anomalias em Transações de Cartão de Crédito}
+\title{Planejamento de Estudo Exploratório: Habitualidade Geográfica e Detecção de Anomalias em Transações de Cartão de Crédito}
 
 \author{Arthur Garcia Takahashi\inst{1}}
 
@@ -23,69 +24,69 @@
 \maketitle
 
 \begin{resumo}
-Este trabalho apresenta o planejamento experimental para a detecção de fraudes em cartões de crédito, focando na análise de habitualidade geográfica. Utilizando uma amostra de 10\% do dataset Sparkov \cite{kaggle}, explorou-se a relação entre a distância física da transação e a ocorrência de anomalias via Python \cite{pandas}. Os resultados preliminares indicam que a distância média é sutilmente superior em fraudes, mas requer integração com outras variáveis para maior precisão.
+Este trabalho apresenta o planejamento experimental para a detecção de fraudes, focando na análise de habitualidade geográfica. Inicialmente, testou-se a hipótese de que a distância física isolada seria um preditor suficiente, o que se provou inconclusivo. Através de um refino metodológico integrando categoria de consumo e janelas temporais, identificou-se anomalias significativas em categorias específicas, fundamentando a estratégia para o modelo de Aprendizado de Máquina subsequente.
 \end{resumo}
 
-\begin{abstract}
-This paper presents the experimental planning for credit card fraud detection, focusing on geographic habituality analysis. Using a 10\% sample of the Sparkov dataset \cite{kaggle}, the relationship between transaction distance and anomalies was explored using Python \cite{pandas}. Preliminary results indicate that the average distance is slightly higher in frauds, but requires integration with other variables for higher accuracy.
-\end{abstract}
+\section{Introdução (Passo 1)}
+A detecção de fraude bancária exige a identificação de quebras de padrão comportamental. Este estudo busca responder: em que medida a divergência geográfica, segmentada por categoria de consumo e horário, atua como um preditor de anomalia robusto? O objetivo é validar se o "raio de consumo" pode reduzir falsos positivos em modelos supervisionados.
 
-\noindent {\bf Palavras-chave:} Detecção de Fraude, Habitualidade Geográfica, Machine Learning.
+\section{Materiais e Métodos (Passo 2)}
+Utilizou-se o simulador Sparkov \cite{kaggle}, que mimetiza padrões de consumo reais. Para esta exploração inicial, extraiu-se uma amostra aleatória de 10\% (55.572 registros de teste) via biblioteca \textit{Pandas} \cite{pandas}. O código fonte e os dados gerados estão documentados no GitHub \cite{github}: \url{https://github.com/arthurgarciatakahashi/norton}.
 
-\noindent {\bf Keywords:} Fraud Detection, Geographic Habituality, Machine Learning.
+\section{Exploração Inicial: A Hipótese da Distância Isolada (Passo 3)}
+A primeira fase da exploração buscou validar a premissa de que transações fraudulentas apresentam distâncias geográficas significativamente maiores que as legítimas. Contudo, os resultados obtidos refutaram a simplicidade desta hipótese.
 
-\section{Formulação da Questão de Pesquisa (Passo 1)}
-Este trabalho busca responder: em que medida a divergência geográfica entre o domicílio do portador e o local do estabelecimento, segmentada por categorias de consumo (físico e virtual), atua como um preditor de quebra de habitualidade? O objetivo é validar se o "raio de consumo" é uma variável robusta para reduzir falsos positivos em modelos de detecção de fraudes.
+Conforme apresentado na Figura \ref{fig:distancia}, a sobreposição dos quartis no boxplot indica que a distância, isoladamente, é um preditor fraco. Estatisticamente, a diferença entre as médias (75,84 km para legítimas vs 78,31 km para fraudes) revelou-se insuficiente para a separação linear das classes.
 
-\section{População e Coleta de Dados (Passo 2)}
-Utilizou-se o dataset Sparkov \cite{kaggle}, um simulador de transações de cartões de crédito que mimetiza padrões de consumo reais com metadados geográficos. Para este experimento, foi extraída uma amostra aleatória de 10\% do conjunto total de dados utilizando a biblioteca \textit{Pandas} \cite{pandas}, totalizando 55.572 registros e preservando a distribuição original das classes. Os scripts desenvolvidos, incluindo a automação da ingestão de dados e o cálculo da métrica de Haversine \cite{haversine}, foram versionados e estão disponíveis para fins de reprodutibilidade no GitHub \cite{github}: \url{https://github.com/arthurgarciatakahashi/norton}.
-
-\section{Análise Exploratória e Visualização (Passo 3)}
-A análise exploratória focou na criação da variável 'distância\_km' via fórmula de Haversine \cite{haversine} para testar a hipótese de que fraudes ocorrem em distâncias maiores. Os resultados estatísticos (Tabela \ref{tab:estatistica}) revelam que a distância média para transações legítimas é de 75,84 km, enquanto para transações fraudulentas a média é levemente superior, atingindo 78,31 km. 
-
-Essa proximidade entre as métricas indica que a distância geográfica, embora relevante, não atua como um preditor isolado de alta precisão, conforme visualizado no boxplot gerado com a biblioteca \textit{Seaborn} \cite{seaborn} (Figura \ref{fig:distancia}).
-
-\begin{table}[ht]
+\begin{figure}[H]
 \centering
-\caption{Estatísticas Descritivas da Distância (km)}
-\label{tab:estatistica}
-\begin{tabular}{l|c|c|c|r}
-\hline
-\textbf{Classe} & \textbf{Média} & \textbf{Mínimo} & \textbf{Máximo} & \textbf{Amostra (n)} \\ \hline
-Legítima (0)    & 75,84          & 0,20            & 147,23          & 55.356               \\
-Fraude (1)      & 78,31          & 7,10            & 139,99          & 216                  \\ \hline
-\end{tabular}
-\end{table}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.7\textwidth]{grafico_distancia.png}
-\caption{Comparativo da Distância Geográfica em Transações Legítimas (0) e Fraudulentas (1) - Escala Logarítmica.}
+\includegraphics[width=0.65\textwidth]{grafico_distancia.png}
+\caption{Comparativo de Distância Geográfica: A similaridade entre as classes indica a falha da hipótese univariada.}
 \label{fig:distancia}
 \end{figure}
 
-\section{Refino da Questão de Pesquisa (Passo 7)}
-A análise exploratória revelou que a distância média das fraudes é apenas 3,25\% superior à das transações legítimas. Este resultado desmistifica a ideia de que a fraude se correlaciona obrigatoriamente com grandes deslocamentos físicos isolados.
+\section{Refino e Análise Multivariada (Passo 7)}
+Diante da insuficiência da distância isolada, o estudo foi expandido para uma análise multivariada, cruzando a localização com a categoria de consumo e o horário da transação. 
 
-Desta forma, a questão de pesquisa é refinada para: ``Como a quebra de habitualidade geográfica pode ser ponderada em conjunto com a \textbf{categoria de consumo} e o \textbf{período do dia} para elevar a precisão na detecção de anomalias?''. O ambiente de experimentação estruturado para responder a esta pergunta encontra-se documentado no repositório oficial do projeto \cite{github}.
+Esta abordagem revelou padrões ocultos de quebra de habitualidade. A Tabela \ref{tab:anomalias} demonstra que, durante a madrugada (00h-06h), a categoria \textbf{food\_dining} apresenta uma distância média de fraude de 122,74 km, um desvio de 46,89 km acima do padrão legítimo. O mapa de calor (Figura \ref{fig:heatmap}) confirma que a anomalia geográfica é contextual.
+
+\begin{table}[H]
+\centering
+\caption{Anomalias Geográficas por Categoria na Madrugada (00h-06h)}
+\label{tab:anomalias}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Categoria} & \textbf{Dist. Legítima} & \textbf{Dist. Fraude} & \textbf{Desvio (km)} \\ \midrule
+\textbf{food\_dining} & 75,84 km & \textbf{122,74 km} & \textbf{+46,90 km} \\
+\textbf{misc\_net} & 74,92 km & 86,97 km & +12,05 km \\
+\textbf{grocery\_pos} & 75,65 km & 85,35 km & +9,70 km \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{heatmap_fraude.png}
+\caption{Heatmap Multivariado: Identificação de clusters de fraude através da interação entre horário e categoria.}
+\label{fig:heatmap}
+\end{figure}
+
+\section{Planejamento da Execução}
+Com base na descoberta da habitualidade contextual, a questão de pesquisa foi refinada para focar na interação de variáveis. Planeja-se utilizar modelos de árvores de decisão (\textbf{Random Forest} e \textbf{XGBoost}), capazes de capturar as regras complexas identificadas na Tabela \ref{tab:anomalias}.
+
+\textbf{Cronograma de Passos Futuros:} 
+\begin{itemize}
+    \item \textbf{Semana 1:} Engenharia de \textit{features} (Interação Distância x Hora x Categoria).
+    \item \textbf{Semana 2:} Treinamento e validação cruzada dos modelos.
+    \item \textbf{Semana 3:} Otimização de hiperparâmetros para dados desbalanceados.
+    \item \textbf{Semana 4:} Avaliação final e redação dos resultados.
+\end{itemize}
 
 \begin{thebibliography}{99}
-
-\bibitem{kaggle} 
-Kaggle. \textit{Credit Card Fraud Detection Dataset 2023}. Disponível em: \url{https://www.kaggle.com/datasets/kartik2112/fraud-detection}. Acesso em: 23 mar. 2026.
-
-\bibitem{haversine} 
-Sinnott, R. W. \textit{Virtues of the Haversine}. Sky and Telescope, vol. 68, no. 2, p. 159, 1984.
-
-\bibitem{pandas} 
-McKinney, W. \textit{Data Structures for Statistical Computing in Python}. Proceedings of the 9th Python in Science Conference, pp. 51-56, 2010.
-
-\bibitem{seaborn} 
-Waskom, M. L. \textit{Seaborn: statistical data visualization}. Journal of Open Source Software, 6(60), 3021, 2021.
-
-\bibitem{github} 
-Takahashi, A. G. \textit{Repositório de Experimentação em ML - Disciplina SIN5032}. GitHub, 2026. Disponível em: \url{https://github.com/arthurgarciatakahashi/norton}.
-
+\bibitem{kaggle} Kaggle. \textit{Credit Card Fraud Dataset}. 2026.
+\bibitem{haversine} Sinnott, R. W. \textit{Virtues of the Haversine}. 1984.
+\bibitem{pandas} McKinney, W. \textit{Data Structures for Python}. 2010.
+\bibitem{seaborn} Waskom, M. L. \textit{Seaborn Visualization}. 2021.
+\bibitem{github} Takahashi, A. G. \textit{Repositório GitHub: /norton}. 2026.
 \end{thebibliography}
 
 \end{document}
