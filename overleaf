@@ -1,62 +1,86 @@
-\documentclass[12pt]{article}
+\documentclass[11pt,a4paper,twocolumn]{article}
 
-\usepackage{sbc-template}
+% Configurações de estilo baseadas no padrão ACL
+\usepackage[margin=2cm]{geometry}
+\usepackage{times}
+\usepackage{latexsym}
 \usepackage{graphicx,url}
 \usepackage[utf8]{inputenc}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 \usepackage{booktabs}
-\usepackage{float} % Pacote essencial para travar as imagens com [H]
+\usepackage{float}
 
-\sloppy
+\title{Habitualidade Geográfica e Modelagem Preditiva na Detecção de Anomalias em Transações de Cartão de Crédito}
 
-\title{Planejamento de Estudo Exploratório: Habitualidade Geográfica e Detecção de Anomalias em Transações de Cartão de Crédito}
+\author{Arthur Garcia Takahashi \\
+  Programa de Pós-Graduação em Sistemas de Informação (PPGSI) \\
+  Escola de Artes, Ciências e Humanidades -- Universidade de São Paulo (EACH-USP) \\
+  São Paulo -- SP -- Brasil \\
+  \texttt{arthurgt@alumni.usp.br}}
 
-\author{Arthur Garcia Takahashi\inst{1}}
-
-\address{Programa de Pós-Graduação em Sistemas de Informação (PPGSI)\\
-  Escola de Artes, Ciências e Humanidades -- Universidade de São Paulo (EACH-USP)\\
-  São Paulo -- SP -- Brasil
-  \email{arthurgt@alumni.usp.br}
-}
+\date{}
 
 \begin{document} 
 
-\maketitle
+\twocolumn[
+  \begin{titlepage}
+    \maketitle
+    \begin{abstract}
+    Este trabalho apresenta o planejamento, a execução experimental e a avaliação de modelos para a detecção de fraudes em cartões de crédito, focando na análise de habitualidade geográfica. Inicialmente, testou-se a hipótese de que a distância física isolada seria um preditor suficiente, o que se provou inconclusivo. Através de um refino metodológico integrando categoria de consumo e janelas temporais, identificou-se anomalias significativas em categorias específicas. Na fase de modelagem, avaliou-se o desempenho dos classificadores Random Forest e HistGradientBoosting diante do desbalanceamento extremo dos dados, revelando um dilema operacional crítico entre a sensibilidade de captura de fraudes e o volume de alarmes falsos gerados por atributos de contexto imediato.
+    \end{abstract}
+    \vspace{0.5cm}
+  \end{titlepage}
+]
 
-\begin{resumo}
-Este trabalho apresenta o planejamento experimental para a detecção de fraudes, focando na análise de habitualidade geográfica. Inicialmente, testou-se a hipótese de que a distância física isolada seria um preditor suficiente, o que se provou inconclusivo. Através de um refino metodológico integrando categoria de consumo e janelas temporais, identificou-se anomalias significativas em categorias específicas, fundamentando a estratégia para o modelo de Aprendizado de Máquina subsequente.
-\end{resumo}
+% ===================================================================
+% TRABALHO 1: PLANEJAMENTO E ANÁLISE EXPLORATÓRIA
+% ===================================================================
 
-\section{Introdução (Passo 1)}
-A detecção de fraude bancária exige a identificação de quebras de padrão comportamental. Este estudo busca responder: em que medida a divergência geográfica, segmentada por categoria de consumo e horário, atua como um preditor de anomalia robusto? O objetivo é validar se o "raio de consumo" pode reduzir falsos positivos em modelos supervisionados.
+\section{Introdução (Trabalho 1)}
+A detecção de fraude bancária exige a identificação de quebras de padrão comportamental. Este estudo busca responder: em que medida a divergência geográfica, segmentada por categoria de consumo e horário, atua como um preditor de anomalia robusto? O objetivo é validar se o "raio de consumo" pode reduzir falsos positivos em modelos supervisionados. 
 
-\section{Materiais e Métodos (Passo 2)}
-Utilizou-se o simulador Sparkov \cite{kaggle}, que mimetiza padrões de consumo reais. Para esta exploração inicial, extraiu-se uma amostra aleatória de 10\% (55.572 registros de teste) via biblioteca \textit{Pandas} \cite{pandas}. O código fonte e os dados gerados estão documentados no GitHub \cite{github}: \url{https://github.com/arthurgarciatakahashi/norton}.
+Para delimitar rigorosamente o escopo prático deste estudo, definiu-se como \textbf{população-alvo} as transações financeiras de cartões de crédito efetuadas por pessoas físicas, correntistas ativos de instituições bancárias de varejo, avaliadas em tempo real na fase de autorização da compra.
 
-\section{Exploração Inicial: A Hipótese da Distância Isolada (Passo 3)}
+\section{Materiais e Métodos}
+O ambiente experimental foi configurado utilizando a linguagem Python 3.10 e a biblioteca \textit{Scikit-Learn} para o desenvolvimento do pipeline de Aprendizado de Máquina (AM). Utilizou-se o simulador estocástico Sparkov \cite{kaggle}, cujo escopo técnico limita-se à geração de padrões de consumo sintéticos baseados em regras predefinidas, configurando uma limitação inerente pela ausência de dinâmicas orgânicas de fraudes reais.
+
+A base original total (\texttt{fraudTest.csv}) compreende \textbf{555.719 transações}. Para viabilizar a exploração e a modelagem, extraiu-se uma amostra aleatória estratificada de 10\% (\textbf{55.572 registros}), mantendo a proporção original de classes para evitar viés de seleção. Os dados foram divididos estritamente via amostragem estratificada na proporção \textit{holdout} 70/30, resultando em \textbf{38.900 instâncias para treinamento} e \textbf{16.672 para teste}. O conjunto de teste preserva o desbalanceamento severo do domínio bancário: 16.607 transações legítimas e 65 fraudes ($0,39\%$). O código fonte unificado e o histórico de revisões estão documentados e versionados no repositório do projeto \cite{github}.
+
+\subsection{Caracterização das Variáveis e Fatores}
+Para responder aos requisitos de modelagem, os atributos extraídos da base foram caracterizados rigorosamente de acordo com sua taxonomia estatística:
+\begin{itemize}
+    \item \texttt{distancia\_km}: Variável \textbf{Quantitativa Contínua} (nível de mensuração: razão), calculada via fórmula de Haversine a partir das coordenadas geográficas do cliente e do estabelecimento.
+    \item \texttt{hora}: Variável \textbf{Quantitativa Discreta} (nível de mensuração: intervalar), extraída do carimbo de data/hora, variando em 24 níveis absolutos (0 a 23).
+    \item \texttt{categoria}: Variável \textbf{Qualitativa Nominal} (fator), mapeada em 14 níveis distintos (e.g., \textit{food\_dining}, \textit{grocery\_pos}, \textit{misc\_net}), representando o segmento de atuação do estabelecimento comercial.
+\end{itemize}
+
+O mapeamento de recursos adota uma limitação severa de escopo: considera-se estritamente o \textbf{contexto imediato} da transação (vetor composto por \texttt{distancia\_km}, \texttt{hora} e \texttt{categoria\_encoded}, esta última processada via codificação numérica ordinal). A limitação fundamental deste mapeamento reside na ausência de agregados históricos longitudinais do portador do cartão (e.g., perfil de gastos acumulados), restringindo a capacidade do classificador à identificação de quebras instantâneas de padrão espacial e temporal.
+
+\section{Exploração Inicial: A Hipótese da Distância Isolada}
 A primeira fase da exploração buscou validar a premissa de que transações fraudulentas apresentam distâncias geográficas significativamente maiores que as legítimas. Contudo, os resultados obtidos refutaram a simplicidade desta hipótese.
 
 Conforme apresentado na Figura \ref{fig:distancia}, a sobreposição dos quartis no boxplot indica que a distância, isoladamente, é um preditor fraco. Estatisticamente, a diferença entre as médias (75,84 km para legítimas vs 78,31 km para fraudes) revelou-se insuficiente para a separação linear das classes.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.65\textwidth]{grafico_distancia.png}
+\includegraphics[width=0.45\textwidth]{grafico_distancia.png}
 \caption{Comparativo de Distância Geográfica: A similaridade entre as classes indica a falha da hipótese univariada.}
 \label{fig:distancia}
 \end{figure}
 
-\section{Refino e Análise Multivariada (Passo 7)}
+\section{Refino e Análise Multivariada}
 Diante da insuficiência da distância isolada, o estudo foi expandido para uma análise multivariada, cruzando a localização com a categoria de consumo e o horário da transação. 
 
 Esta abordagem revelou padrões ocultos de quebra de habitualidade. A Tabela \ref{tab:anomalias} demonstra que, durante a madrugada (00h-06h), a categoria \textbf{food\_dining} apresenta uma distância média de fraude de 122,74 km, um desvio de 46,89 km acima do padrão legítimo. O mapa de calor (Figura \ref{fig:heatmap}) confirma que a anomalia geográfica é contextual.
 
 \begin{table}[H]
 \centering
-\caption{Anomalias Geográficas por Categoria na Madrugada (00h-06h)}
+\small
+\caption{Anomalias Geográficas na Madrugada (00h-06h)}
 \label{tab:anomalias}
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{lrrr}
 \toprule
-\textbf{Categoria} & \textbf{Dist. Legítima} & \textbf{Dist. Fraude} & \textbf{Desvio (km)} \\ \midrule
+\textbf{Categoria} & \textbf{Dist. Leg.} & \textbf{Dist. Fr.} & \textbf{Desvio} \\ \midrule
 \textbf{food\_dining} & 75,84 km & \textbf{122,74 km} & \textbf{+46,90 km} \\
 \textbf{misc\_net} & 74,92 km & 86,97 km & +12,05 km \\
 \textbf{grocery\_pos} & 75,65 km & 85,35 km & +9,70 km \\ \bottomrule
@@ -65,28 +89,59 @@ Esta abordagem revelou padrões ocultos de quebra de habitualidade. A Tabela \re
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{heatmap_fraude.png}
+\includegraphics[width=0.48\textwidth]{heatmap_fraude.png}
 \caption{Heatmap Multivariado: Identificação de clusters de fraude através da interação entre horário e categoria.}
 \label{fig:heatmap}
 \end{figure}
 
-\section{Planejamento da Execução}
-Com base na descoberta da habitualidade contextual, a questão de pesquisa foi refinada para focar na interação de variáveis. Planeja-se utilizar modelos de árvores de decisão (\textbf{Random Forest} e \textbf{XGBoost}), capazes de capturar as regras complexas identificadas na Tabela \ref{tab:anomalias}.
+% ===================================================================
+% TRABALHO 2: IMPLEMENTAÇÃO E AVALIAÇÃO DOS MODELOS
+% ===================================================================
 
-\textbf{Cronograma de Passos Futuros:} 
-\begin{itemize}
-    \item \textbf{Semana 1:} Engenharia de \textit{features} (Interação Distância x Hora x Categoria).
-    \item \textbf{Semana 2:} Treinamento e validação cruzada dos modelos.
-    \item \textbf{Semana 3:} Otimização de hiperparâmetros para dados desbalanceados.
-    \item \textbf{Semana 4:} Avaliação final e redação dos resultados.
-\end{itemize}
+\section{Trabalho 2: Implementação e Avaliação dos Modelos}
+Apoiando-se no planejamento e nas quebras de habitualidade contextual mapeadas na fase exploratória, este segundo bloco consolida a execução real da modelagem preditiva e a correção de vieses metodológicos apontados pelo revisor.
+
+\subsection{Configuração dos Classificadores}
+Para mapear as interações não lineares e as regras complexas descobertas na análise multivariada, implementou-se o \textit{Random Forest Classifier} (paralelo) e o \textit{HistGradientBoosting Classifier} (sequencial, aplicado nativamente para otimização de dependências do ambiente computacional macOS). Ambas as técnicas baseadas em árvores de decisão foram selecionadas por sua robustez intrínseca contra distribuições multimodais e capacidade de processar os fatores categóricos codificados sem exigência de normalização estrita.
+
+\subsection{Cenário Padrão vs. Ajuste Baseado em Pesos}
+No primeiro ensaio com parametrização padrão (hiperparâmetros \textit{default}), o desbalanceamento severo induziu ambos os algoritmos a priorizarem heuristicamente a acurácia global ($>99,6\%$). O resultado prático foi um \textit{recall} nulo ($0,00$), onde os modelos foram incapazes de classificar qualquer fraude no conjunto de teste.
+
+Para solucionar a inércia analítica, os classificadores foram reconfigurados introduzindo a penalização adaptativa (\texttt{class\_weight='balanced'}), associando às funções de perda pesos inversamente profissionais à frequência das classes. Os resultados obtidos após o balanceamento estão dispostos na Tabela \ref{tab:resultados}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Desempenho na Classe Fraude (Modelos Balanceados)}
+\label{tab:resultados}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Modelo} & \textbf{Rec.} & \textbf{Prec.} & \textbf{F1} & \textbf{Falsos Pos.} \\ \midrule
+\textbf{Random Forest} & 25\% & 6\% & 0,10 & 249 \\
+\textbf{HistGBC} & 60\% & 2\% & 0,04 & 2.182 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{matrizes_confusao.png}
+\caption{Matrizes de Confusão Comparativas: Painel esquerdo detalha o Random Forest e o direito ilustra o HistGradientBoosting.}
+\label{fig:matrizes}
+\end{figure}
+
+\subsection{Discussão Técnico-Operacional}
+A análise das matrizes de confusão (Figura \ref{fig:matrizes}) expõe o trade-off clássico encontrado na engenharia de segurança em meios de pagamento. O \textbf{HistGradientBoosting} alcançou maior sensibilidade ao capturar 60\% das fraudes reais (39 de 65). Contudo, o custo colateral manifestou-se no disparo de \textbf{2.182 falsos positivos}. Em ambiente de produção de varejo, essa taxa geraria fricção inaceitável, provocando o bloqueio indevido de milhares de correntistas legítimos e sobrecarregando os canais analíticos de suporte.
+
+O \textbf{Random Forest} movimentou-se de forma conservadora, limitando os alarmes falsos a 249 ocorrências e mitigando o atrito com o usuário. Entretanto, abriu uma severa vulnerabilidade operacional ao falhar na identificação de 75\% das ações fraudulentas (apenas 16 capturadas).
+
+As evidências experimentais provam que variáveis de contexto imediato isoladas não detêm poder discriminatório suficiente para a tomada de decisão em produção. Como trabalho futuro, propõe-se a engenharia de características baseada em agregados históricos longitudinais (e.g., ticket médio de 30 dias), injetando a granularidade necessária para a supressão definitiva dos falsos positivos.
 
 \begin{thebibliography}{99}
 \bibitem{kaggle} Kaggle. \textit{Credit Card Fraud Dataset}. 2026.
 \bibitem{haversine} Sinnott, R. W. \textit{Virtues of the Haversine}. 1984.
 \bibitem{pandas} McKinney, W. \textit{Data Structures for Python}. 2010.
 \bibitem{seaborn} Waskom, M. L. \textit{Seaborn Visualization}. 2021.
-\bibitem{github} Takahashi, A. G. \textit{Repositório GitHub: /norton}. 2026.
+\bibitem{github} Takahashi, A. G. \textit{Repositório do Projeto: /norton}. 2026. Disponível em: \url{https://github.com/arthurgarciatakahashi/norton}.
 \end{thebibliography}
 
 \end{document}

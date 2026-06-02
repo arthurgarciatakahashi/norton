@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Apresentação SIN5032 - Arthur Takahashi</title>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/serif.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/monokai.min.css">
+
+		<style>
+			.reveal h1, .reveal h2, .reveal h3 { color: #222; font-weight: bold; }
+			.reveal p, .reveal li { font-size: 26px; text-align: left; color: #444; }
+			.reveal ul { margin-left: 2em; }
+			.highlight { color: #b11116; font-weight: bold; }
+			.flex-container { display: flex; align-items: center; justify-content: space-between; }
+			.col { flex: 1; padding: 10px; }
+			.box-alert { background: #fdf2f2; border-left: 5px solid #b11116; padding: 12px; margin-top: 10px; }
+			.reveal pre { width: 100%; margin: 5px auto; box-shadow: none; }
+			.reveal code { font-size: 18px; line-height: 1.2; border-radius: 5px; }
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+
+				<section data-background-color="#f4f4f4">
+					<h2 style="font-size: 38px; text-align: center;">Habitualidade Geográfica e Modelagem Preditiva na Detecção de Anomalias em Cartão de Crédito</h2>
+					<p style="text-align: center; margin-top: 50px; font-size: 22px;">
+						<strong>Autor:</strong> Arthur Garcia Takahashi (Nº USP: 6882256)<br>
+						Programa de Pós-Graduação em Sistemas de Informação (PPgSI - EACH-USP)<br>
+						<span style="font-size: 18px; color: #777;">Disciplina: SIN5032 | Prof. Norton Trevisan Roman</span>
+					</p>
+				</section>
+
+				<section>
+					<h3>1. Introdução e Contexto</h3>
+					<ul>
+						<li><strong>População-Alvo:</strong> Transações de cartões de crédito de pessoas físicas em bancos de varejo autorizadas em tempo real.</li>
+						<li><strong>O Desafio:</strong> Mitigar prejuízos financeiros mantendo a experiência do cliente fluida (baixa fricção).</li>
+						<li><strong>Questão de Pesquisa:</strong> Em que medida variáveis de <span class="highlight">contexto imediato</span> (geografia, hora e categoria) atuam como preditores de fraude robustos?</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3>2. Materiais e Métodos</h3>
+					<ul>
+						<li><strong>Origem dos Dados:</strong> Simulador estocástico <em>Sparkov</em>.</li>
+						<li><strong>Volumetria Bruta:</strong> 555.719 transações.</li>
+						<li><strong>Amostragem Estratificada (10%):</strong> 55.572 registros para viabilidade computacional.</li>
+						<li><strong>Estratégia de Validação:</strong> Divisão <em>Holdout</em> 70/30 estratificada.
+							<ul>
+								<li>Treino: 38.900 instâncias | Teste: 16.672 instâncias.</li>
+							</ul>
+						</li>
+					</ul>
+					<div class="box-alert">
+						<p style="font-size: 24px; margin: 0;">⚠️ <strong>Limitação Crítica:</strong> Desbalanceamento extremo de classes no conjunto de teste: 16.607 legítimas vs. <strong>65 fraudes (0,39%)</strong>.</p>
+					</div>
+				</section>
+
+				<section>
+					<h3>3. Taxonomia Estatística dos Dados</h3>
+					<ul>
+						<li><span class="highlight">distancia_km</span>: Variável <strong>Quantitativa Contínua</strong> (Razão). Calculada via Fórmula de Haversine entre cliente e estabelecimento.</li>
+						<li><span class="highlight">hora</span>: Variável <strong>Quantitativa Discreta</strong> (Intervalar). Extraída do timestamp original (0 a 23).</li>
+						<li><span class="highlight">categoria</span>: Variável <strong>Qualitativa Nominal</strong> (Fator). Possui 14 níveis distintos (ex: <em>food_dining</em>, <em>grocery_pos</em>).</li>
+					</ul>
+					<div class="box-alert" style="border-left-color: #666; background: #f9f9f9;">
+						<p style="font-size: 22px; margin: 0;"><strong>Escopo do Mapeamento:</strong> Restrito ao cenário instantâneo da transação. Não há histórico longitudinal do portador.</p>
+					</div>
+				</section>
+
+				<section>
+					<h3>4. Hipótese Univariada: Distância</h3>
+					<div class="flex-container">
+						<div class="col" style="flex: 1.2;">
+							<ul>
+								<li>Premissa: Fraudadores operam majoritariamente fora do raio residencial do cliente.</li>
+								<li><strong>Resultado Estatístico:</strong> Refutado.
+									<ul>
+										<li>Média Legítimas: 75,84 km</li>
+										<li>Média Fraudes: 78,31 km</li>
+									</ul>
+								</li>
+								<li>Sobreposição severa de quartis impede a separação linear.</li>
+							</ul>
+						</div>
+						<div class="col">
+							<img src="grafico_distancia.png" alt="Boxplot Distância" style="max-width: 100%; border: 1px solid #ddd;">
+						</div>
+					</div>
+				</section>
+
+				<section>
+					<h3>5. Refino: Quebra de Habitualidade</h3>
+					<div class="flex-container">
+						<div class="col" style="flex: 0.8;">
+							<img src="heatmap_fraude.png" alt="Heatmap Volumetria" style="max-width: 100%; border: 1px solid #ddd;">
+						</div>
+						<div class="col" style="flex: 1.2;">
+							<ul>
+								<li>A fraude é <span class="highlight">contextual e não isolada</span>.</li>
+								<li><strong>Associação Crítica:</strong> Janela da madrugada (00h às 06h) combinada com segmentos de consumo específicos.</li>
+								<li>Na categoria <strong>food_dining</strong>, o desvio médio geográfico da fraude salta para <strong>+46,90 km</strong> acima das transações legítimas no mesmo horário.</li>
+							</ul>
+						</div>
+					</div>
+				</section>
+
+				<section>
+					<h3>6. Código: Amostragem e Engenharia de Recursos</h3>
+					<p style="margin:0 0 5px 0; font-size:22px;">Tratamento vetorizado com Numpy e cálculo geométrico de Haversine:</p>
+					<pre><code class="language-python"># Amostragem de 10% mantendo a proporção de fraudes original
+df_amostra = df.groupby('is_fraud', group_keys=False).apply(
+    lambda x: x.sample(frac=0.10, random_state=42)
+)
+
+# Cálculo geométrico vetorial da Distância em KM
+dlat = np.radians(df_amostra['merch_lat'] - df_amostra['lat'])
+dlon = np.radians(df_amostra['merch_long'] - df_amostra['long'])
+a = (np.sin(dlat/2)**2 + np.cos(np.radians(df_amostra['lat'])) * np.cos(np.radians(df_amostra['merch_lat'])) * np.sin(dlon/2)**2)
+df_amostra['distancia_km'] = 2 * 6371 * np.arcsin(np.sqrt(a))
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>7. Código: Divisão e Codificação Categórica</h3>
+					<p style="margin:0 0 5px 0; font-size:22px;">Tratamento dos fatores nominais e separação rígida por Holdout:</p>
+					<pre><code class="language-python"># Transformação da variável qualitativa nominal em índices numéricos
+encoder = OrdinalEncoder()
+df_amostra['categoria_encoded'] = encoder.fit_transform(df_amostra[['category']])
+
+# Variáveis selecionadas do contexto imediato
+X = df_amostra[['distancia_km', 'hora', 'categoria_encoded']]
+y = df_amostra['is_fraud']
+
+# Divisão Holdout 70/30 estratificada (Evita data leakage)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.30, stratify=y, random_state=42
+)
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>8. Código: Parametrização dos Classificadores</h3>
+					<p style="margin:0 0 5px 0; font-size:22px;">Injeção do contrapeso adaptativo para mitigar a inércia do desbalanceamento:</p>
+					<pre><code class="language-python"># Configuração das árvores paralelas com balanceamento adaptativo
+rf_model = RandomForestClassifier(class_weight='balanced', random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Configuração do Boosting Sequencial otimizado
+hist_gb_model = HistGradientBoostingClassifier(
+    class_weight='balanced', random_state=42
+)
+hist_gb_model.fit(X_train, y_train)
+
+# Geração das previsões para validação no conjunto oculto
+y_pred_rf = rf_model.predict(X_test)
+y_pred_hist = hist_gb_model.predict(X_test)
+					</code></pre>
+				</section>
+
+				<section>
+					<h3>9. O Ensaio Inicial (Cenário Default)</h3>
+					<ul>
+						<li>A otimização padrão focou exclusivamente na minimização do erro global devido ao severo desbalanceamento.</li>
+						<li><strong>Resultado Prático:</strong> Acurácia enganosa de <strong>99,63%</strong>.</li>
+						<li><strong>Métrica Real (Recall):</strong> <span class="highlight">0,00%</span>. Os classificadores não detectaram nenhuma das 65 fraudes de teste.</li>
+						<li><strong>Ação Corretiva:</strong> Introdução do parâmetro adaptativo <code style="font-size: 24px;">class_weight='balanced'</code> visto no código anterior.</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3>10. Resultados Computacionais</h3>
+					<div class="flex-container">
+						<div class="col" style="flex: 1.3;">
+							<table style="font-size: 21px; width: 100%;">
+								<thead>
+									<tr style="background: #eee;">
+										<th>Métrica</th>
+										<th>Random Forest</th>
+										<th>HistGBC</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td><strong>Recall (Sensibilidade)</strong></td>
+										<td>25% (16 / 65)</td>
+										<td class="highlight">60% (39 / 65)</td>
+									</tr>
+									<tr>
+										<td><strong>Precisão</strong></td>
+										<td class="highlight">6%</td>
+										<td>2%</td>
+									</tr>
+									<tr>
+										<td><strong>F1-Score</strong></td>
+										<td>0,10</td>
+										<td>0,04</td>
+									</tr>
+									<tr style="background: #fdf2f2;">
+										<td><strong>Falsos Positivos</strong></td>
+										<td><strong>249</strong></td>
+										<td><strong>2.182</strong></td>
+									</tr>
+								</tbody>
+							</table>
+							<p style="font-size: 18px; color: #666; margin-top: 15px;">*Modelos avaliados estritamente sob o conjunto de teste oculto (holdout).</p>
+						</div>
+						<div class="col" style="flex: 0.7;">
+							<img src="matrizes_confusao.png" alt="Matrizes de Confusão" style="max-width: 100%; border: 1px solid #ddd;">
+						</div>
+					</div>
+				</section>
+
+				<section>
+					<h3>11. Discussão: Dilema de Produção</h3>
+					<ul>
+						<li><strong>O Cenário HistGBC:</strong> Captura 60% do prejuízo de fraude, mas bloqueia indevidamente 2.182 clientes legítimos em um universo de 16 mil compras. Fricção operacional insustentável.</li>
+						<li><strong>O Cenário Random Forest:</strong> Mantém a carteira estável (apenas 249 falsos alarmes), mas deixa passar 75% das fraudes. Exposição financeira crítica.</li>
+						<li><strong>Conclusão Sincera:</strong> Dados baseados puramente no <span class="highlight">contexto imediato da transação</span> são matematicamente insuficientes para sustentar uma operação estável.</li>
+					</ul>
+				</section>
+
+				<section>
+					<h3>12. Conclusão e Próximos Passos</h3>
+					<ul>
+						<li>A hipótese univariada falhou; a abordagem multivariada revelou dependência contextual, mas esbarrou no limite informacional do escopo.</li>
+						<li><strong>Trabalhos Futuros (Como sanar a limitação):</strong>
+							<ul>
+								<li>Desenvolver Engenharia de Recursos focada em variáveis longitudinais agregadas (Perfil histórico do cliente, ticket médio por estabelecimento e desvios de consumo em janelas móveis de 30 dias).</li>
+							</ul>
+						</li>
+						<li><strong>Transparência Científica:</strong> Repositório público com histórico completo de commits para reprodutibilidade:
+							<span style="font-size: 20px; display:block; color:blue; word-break: break-all;">https://github.com/arthurgarciatakahashi/norton</span>
+						</li>
+					</ul>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				slideNumber: 'c/t',
+				transition: 'fade',
+				plugins: [ RevealHighlight ] // Ativa a coloração do código nos slides
+			});
+		</script>
+	</body>
+</html>
